@@ -29,8 +29,16 @@
 
 #include <android/sensor.h>
 #include <android/log.h>
-#include <android_native_app_glue.h>
 
+#include <game-activity/GameActivity.cpp>
+#include <game-text-input/gametextinput.cpp>
+
+extern "C" {
+#include <game-activity/native_app_glue/android_native_app_glue.c>
+}
+
+#undef LOGI
+#undef LOGW
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
 
@@ -279,11 +287,11 @@ ASensorManager* AcquireASensorManagerInstance(android_app* app) {
     JNIEnv* env = nullptr;
     app->activity->vm->AttachCurrentThread(&env, nullptr);
 
-    jclass android_content_Context = env->GetObjectClass(app->activity->clazz);
+    jclass android_content_Context = env->GetObjectClass(app->activity->javaGameActivity);
     jmethodID midGetPackageName = env->GetMethodID(android_content_Context,
                                                    "getPackageName",
                                                    "()Ljava/lang/String;");
-    auto packageName= (jstring)env->CallObjectMethod(app->activity->clazz,
+    auto packageName= (jstring)env->CallObjectMethod(app->activity->javaGameActivity,
                                                         midGetPackageName);
 
     const char *nativePackageName = env->GetStringUTFChars(packageName, nullptr);
@@ -318,7 +326,8 @@ void android_main(struct android_app* state) {
     memset(&engine, 0, sizeof(engine));
     state->userData = &engine;
     state->onAppCmd = engine_handle_cmd;
-    state->onInputEvent = engine_handle_input;
+    // TODO: different from NativeActivity
+    // state->onInputEvent = engine_handle_input;
     engine.app = state;
 
     // Prepare to monitor accelerometer
